@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" type="text/css" media="all" th:href="@{/css/jquery.dataTables.min.css}">
+    <link rel="stylesheet" type="text/css" media="all" th:href="@{/css/bootstrap.min.css}">
+
+    <title>Home</title>
+    <style>
+        #loader {
+            border: 12px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 12px solid #444444;
+            width: 70px;
+            height: 70px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .center {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+        }
+    </style>
+</head>
+<body class="p-3 mb-2 bg-light text-black" >
+<div id="loader" class="center"></div>
+<div id="page-contents" style="visibility:hidden">
+<div class="alert alert-success alert-dismissible fade show w-60 position-fixed text-center" style="left:35%;right:35%;display: none;" role="alert" id="success_box">
+    <span text="Hello">Team added Successfully</span>
+</div>
+<div class="alert alertsec alert-success alert-dismissible fade show w-60 position-fixed text-center" style="left:35%;right:35%" role="alert"  th:if="${success}">
+    <span>Score Updated Successfully</span>
+</div>
+<div class="alert alertsec alert-danger alert-dismissible fade show w-60 position-fixed text-center" style="left:35%;right:35%" role="alert"  th:if="${fail}">
+    <span>Error while updating score !</span>
+</div>
+<div class="container">
+    <h2 id="instructionbox" style="padding-top: 50px;" team="">Hacker Premier League</h2>
+</div>
+<div class="container">
+
+    <div id="contentDiv" style="clear: right;margin-top: 35px;">
+        <button style="margin: 0.25em;" type="button" class="btn btn-info float-right" id="addNewNote" onclick="showTeamModal()">
+            + Add a New Team
+        </button>
+        <button style="margin: 0.25em;" type="button" class="btn btn-info float-right" id="startmatch" onclick="startMatch()">
+            Conduct Match
+        </button>
+        <button style="margin: 0.25em;display: none;" type="button" class="btn btn-info float-right" id="cancelmatch" onclick="cancelMatch()">
+            Cancel Match
+        </button>
+
+        <div class="table-responsive">
+            <table class="table table-striped" id="userTable">
+                <thead>
+                <tr>
+                    <th style="width: 5%" scope="col"></th>
+                    <th style="width: 5%" scope="col">ID</th>
+                    <th style="width: 20%" scope="col">Team Name</th>
+                    <th style="width: 14%" scope="col">Wins</th>
+                    <th style="width: 14%" scope="col">Losses</th>
+                    <th style="width: 14%" scope="col">Ties</th>
+                    <th style="width: 14%" scope="col">Score</th>
+                    <th style="width: 4%" scope="col"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="team : ${teams}" class="">
+
+                    <td scope="row" class="notes-title"></td>
+                    <td scope="row" th:text="${team.id}" th:class="${team.id}+team">Example Team ID</td>
+                    <td scope="row" th:text="${team.team_name}" class="notes-title">Example Team Name</th>
+                    <td scope="row" th:text="${team.wins}" class="notes-title">Example Wins</td>
+                    <td scope="row" th:text="${team.losses}" class="notes-title">Example Losses</td>
+                    <td scope="row" th:text="${team.ties}" class="notes-title">Example Ties</td>
+                    <td scope="row" th:text="${team.score}" class="notes-title">Example Score</td>
+<!--                    <td scope="row" class="notes-title"></td>-->
+                    <td>
+                        <button type="button" class="btn btn-success select-button" th:onclick='showSelectTeamModal([[${team}]])'>Select</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal fade" id="createTeamModal" tabindex="-1" role="dialog" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="noteModalLabel">Note</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+<!--                        th:action="@{/createteam}"-->
+<!--                        <form method="POST" >-->
+                            <div class="form-group">
+                                <label for="team_name" class="col-form-label">Team Name</label>
+                                <input type="text" name="team_name" class="form-control" id="team_name" maxlength="20" required>
+                            </div>
+                            <button id="noteSubmit" type="submit" class="d-none" onclick="addTeam($('#team_name').val())"></button>
+<!--                        </form>-->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="$('#noteSubmit').click();">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="confirmTeamModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" onclick="closeSelectTeamModal()">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmTeamModalTitle">Modal title</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeSelectTeamModal()">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="confirmTeamModalBody" data="">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="modalClose" data-dismiss="modal" onclick="closeSelectTeamModal()">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmSelectedTeam()">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="resultModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resultModalTitle">Please select the Result of Match</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="resultModalBody" data="">
+                        <button type="button" class="btn btn-primary" id="resultTeamOne" onclick="teamOneWinAction()">Team1</button>
+                        <button type="button" class="btn btn-secondary" onclick="teamTieAction()">Match is Tie</button>
+                        <button type="button" class="btn btn-primary" id="resultTeamTwo" onclick="teamTwoWinAction()">Team2</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="modalClose2" data-dismiss="modal" onclick="cancelMatch()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<script th:src="@{/js/jquery-3.2.1.min.js}"></script>
+<script th:src="@{/js/popper.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}"></script>
+<script th:src="@{/js/jquery.bootstrap-growl.js}"></script>
+<script th:src="@{/js/jquery.dataTables.min.js}"></script>
+
+
+<script>
+
+            var team1;
+            var team2;
+            var selectedTeam;
+
+            function showTeamModal() {
+                $('#createTeamModal').modal('show');
+            }
+
+            $(document).ready( function () {
+                var table = $('#userTable').DataTable();
+                table.order([6,'desc']).draw();
+                table.column(7).visible(false);
+                document.querySelector("#loader").style.display = "none";
+                document.querySelector("#page-contents").style.visibility = "visible";
+                setTimeout(function(){ $(".alertsec").alert('close')}, 3000);
+            });
+
+            function addTeam(teamName)
+            {
+                $.ajax( {
+                    url:'/api/teams',
+                    type : "POST",
+                    contentType: 'application/json',
+                    data : JSON.stringify({"team_name": teamName}),
+                    success : function(team)
+                    {
+                        addRow(team)
+                        showSuccessAlert();
+                    }
+                });
+            }
+
+            function addRow(team)
+            {
+                var table = $("#userTable").DataTable();
+                var teamdata = JSON.stringify(team);
+                var button = "<button type='button' class='btn btn-success select-button' onclick='showSelectTeamModal("+teamdata+")'>Select</button>";
+                table.row.add(["",team.id,team.team_name,"0","0","0","0",button]).draw("false");
+                $('#createTeamModal').modal('hide');
+            }
+
+            function showSuccessAlert()
+            {
+                $("#success_box").slideDown();
+                setTimeout(function(){ $(".alert").slideUp(500)}, 3000);
+            }
+
+            function startMatch()
+            {
+                $("#addNewNote").hide();
+                $("#startmatch").hide();
+                $("#cancelmatch").show();
+                var table = $("#userTable").DataTable();
+                table.column(7).visible(true);
+                firstMatch();
+            }
+
+            function firstMatch()
+            {
+                $("#instructionbox").text("Please select team One").attr('team',1);
+            }
+
+            function secondMatch()
+            {
+                 $("#instructionbox").text("Please select team Two").attr('team',2);
+            }
+
+            function cancelMatch()
+            {
+                var teamNum =  $("#instructionbox").attr('team');
+                if(teamNum == 2)
+                {
+                    window.location="/home";
+                }
+                $("#addNewNote").show();
+                $("#startmatch").show();
+                $("#cancelmatch").hide();
+                $("#instructionbox").text("Hacker Premier League").attr('team',0);
+                var table = $("#userTable").DataTable();
+                table.column(7).visible(false);
+                team1=undefined;
+                team2=undefined;
+            }
+
+            function showSelectTeamModal(team)
+            {
+                console.log("show select team");
+                $("."+team.id+"team").parent().addClass("selected")
+                var confirmText = "You have selected "+team.team_name;
+                var teamNum =  $("#instructionbox").attr('team');
+                $('#confirmTeamModalTitle').text('Confirm Team '+teamNum);
+                $('#confirmTeamModalBody').text(confirmText);
+                selectedTeam = team;
+                $("#confirmTeamModal").modal();
+            }
+
+            function closeSelectTeamModal()
+            {
+                $(".selected").removeClass("selected");
+            }
+
+            function confirmSelectedTeam()
+            {
+                var table = $("#userTable").DataTable();
+                table.row('.selected').remove().draw( false );
+                var teamNum =  $("#instructionbox").attr('team');
+                if(teamNum == 1)
+                {
+                    team1 = selectedTeam;
+                    $("#modalClose").click();
+                    secondMatch();
+                }
+                else if(teamNum == 2)
+                {
+                    team2 = selectedTeam;
+                    $("#modalClose").click();
+                    showSelectResultModal();
+                }
+            }
+
+            function showSelectResultModal()
+            {
+                $("#resultTeamOne").text(team1.team_name+" is Winner");
+                $("#resultTeamTwo").text(team2.team_name+" is Winner");
+                $("#resultModal").modal();
+            }
+
+            function updateScore(winnerid)
+            {
+                $.ajax( {
+                    url:'/api/teams/result',
+                    type : "POST",
+                    contentType: 'application/json',
+                    data : JSON.stringify({"team_one":""+team1.id+"", "team_two":""+team2.id+"", "winner_id":""+winnerid+""}),
+                    success : function()
+                    {
+                        window.location="/result?success=true"
+                    },
+                    error : function()
+                    {
+                        window.location="/result?success=fail"
+                    }
+                });
+            }
+
+            function teamOneWinAction()
+            {
+                updateScore(team1.id);
+            }
+
+            function teamTwoWinAction()
+            {
+                 updateScore(team2.id);
+            }
+
+            function teamTieAction()
+            {
+                updateScore(-1);
+            }
+
+
+</script>
+</body>
+</html>
